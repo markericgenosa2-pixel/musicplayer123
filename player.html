@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modern Music Player</title>
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+<style>
+body{
+  margin:0;
+  font-family:'Segoe UI',sans-serif;
+  color:white;
+  background:url('beatleslogo1.jpg');
+  background-position: 70% center;
+  background-size: cover;
+}
+
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.78);
+  z-index:-1;
+}
+
+.app{
+  display:flex;
+  height:100vh;
+}
+
+.sidebar{
+  width:260px;
+  background:#000;
+  padding:20px;
+  overflow-y:auto;
+}
+
+.album{
+  margin-bottom:15px;
+  cursor:pointer;
+}
+
+.album img{
+  width:100%;
+  border-radius:10px;
+}
+
+.album-title{
+  font-size:14px;
+  color:#b3b3b3;
+  margin-top:5px;
+}
+
+.main{
+  flex:1;
+  padding:20px;
+  overflow-y:auto;
+}
+
+.now-playing{
+  display:flex;
+  gap:20px;
+  align-items:flex-start;
+}
+
+.cover{
+  width:250px;
+  border-radius:12px;
+}
+
+.info{
+  flex:1;
+  min-width:0;
+}
+
+.info p{
+  color:#e5e5e5;
+  line-height:1.8;
+  font-size:14px;
+  margin-top:12px;
+  white-space:normal;
+  overflow-wrap:break-word;
+}
+
+.song{
+  padding:10px;
+  display:flex;
+  justify-content:space-between;
+  cursor:pointer;
+  border-radius:8px;
+}
+
+.song:hover{ background:#222; }
+.song.active{ background:#1db954; }
+
+.player{
+  position:fixed;
+  bottom:0;
+  left:260px;
+  right:0;
+  background:#181818;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:10px 20px;
+}
+
+.player-left{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.player-left img{
+  width:50px;
+  border-radius:6px;
+}
+
+.player-center{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
+.controls i{
+  margin:0 10px;
+  cursor:pointer;
+  color:#b3b3b3;
+}
+
+.controls i:hover{ color:white; }
+.controls i.active{ color:#1db954; }
+
+.progress{ width:320px; }
+
+.player-right{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="sidebar" id="albums"></div>
+
+  <div class="main">
+    <div class="now-playing">
+      <img id="cover" class="cover">
+      <div class="info">
+        <h2 id="title">Select an album</h2>
+        <p id="desc"></p>
+      </div>
+    </div>
+
+    <div id="songs"></div>
+  </div>
+
+</div>
+
+<div class="player">
+
+  <div class="player-left">
+    <img id="miniCover">
+    <div id="current">Nothing playing</div>
+  </div>
+
+  <div class="player-center">
+
+    <div class="controls">
+      <i id="playBtn" class="fas fa-play" onclick="playPause()"></i>
+      <i class="fas fa-forward" onclick="nextSong()"></i>
+      <i class="fas fa-random" onclick="toggleShuffle()"></i>
+      <i class="fas fa-repeat" onclick="toggleLoop()"></i>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span id="currentTime">0:00</span>
+      <input type="range" id="progress" class="progress" value="0">
+      <span id="duration">0:00</span>
+    </div>
+
+  </div>
+
+  <div class="player-right">
+    <i class="fas fa-volume-up"></i>
+    <input type="range" min="0" max="1" step="0.01" onchange="setVolume(this.value)">
+  </div>
+
+</div>
+
+<audio id="audio"></audio>
+
+<script>
+
+const albums=[
+{
+  title:"Please Please Me",
+  description:"Please Please Me is the debut studio album by The Beatles, released in 1963, and it marked the beginning of Beatlemania. The album was recorded in a single day at Abbey Road Studios, capturing the band’s raw energy and early live sound. It features a mix of original Lennon–McCartney songs and covers of popular rock and roll and R&B tracks that influenced the group. Standout songs like I Saw Her Standing There and Twist and Shout helped define their youthful and energetic style. The album’s success established The Beatles as a major force in music and set the stage for their global rise.",
+  cover:"pleasepleasemealbumcover.webp",
+  songs:[
+    {title:"I Saw Her Standing There",file:"i-saw-her-standing-there-remastered-2009-128-ytshorts.savetube.me.mp3"},
+    {title:"P.S. I Love You",file:"p-s-i-love-you-remastered-2009-128-ytshorts.savetube.me.mp3"},
+    {title:"Do You Want To Know A Secret",file:"the-beatles-do-you-want-to-know-a-secret-128-ytshorts.savetube.me.mp3"},
+    {title:"Love Me Do",file:"the-beatles-love-me-do-128-ytshorts.savetube.me.mp3"},
+    {title:"Twist and Shout",file:"the-beatles-the-beatles-twist-shout-live-on-the-ed-sullivan-show-128-ytshorts.savetube.me.mp3"}
+  ]
+},
+{
+  title:"With The Beatles",
+  description:"With The Beatles is the second studio album by The Beatles, released in 1963, and it showed their rapid growth in popularity and musical maturity. The album blends original Lennon–McCartney compositions with covers of American R&B and rock and roll songs that influenced their early sound. It features a tighter, more polished production compared to their debut, highlighting their improving studio skills. Standout tracks like All My Loving and Money (That’s What I Want) helped solidify their energetic and catchy style. The album was a major commercial success and played a key role in expanding Beatlemania beyond the UK.",
+  cover:"withthebeatlesalbumcover.jpg",
+  songs:[
+    {title:"All My Loving",file:"all-my-loving-remastered-2009-128-ytshorts.savetube.me.mp3"},
+    {title:"Money",file:"money-that-s-what-i-want-remastered-2009-128-ytshorts.savetube.me.mp3"},
+    {title:"Please Mister Postman",file:"please-mister-postman-remastered-2009-128-ytshorts.savetube.me.mp3"},
+    {title:"Roll Over Beethoven",file:"the-beatles-roll-over-beethoven-1964-128-ytshorts.savetube.me.mp3"},
+    {title:"Till There Was You",file:"the-beatles-till-there-was-you-128-ytshorts.savetube.me.mp3"}
+  ]
+},
+{
+  title:"A Hard Day's Night",
+  description:"A Hard Day’s Night is the third studio album by The Beatles, released in 1964, and it was the first to feature entirely original songs written by Lennon–McCartney. It served as the soundtrack to their film of the same name, capturing the excitement and chaos of Beatlemania at its peak. The album showcases a more refined and confident sound, with jangly guitars, strong melodies, and tight vocal harmonies. Iconic tracks like A Hard Day’s Night, Can’t Buy Me Love, and And I Love Her highlight the band’s songwriting growth and pop innovation. The album was both a critical and commercial success, solidifying The Beatles as global music superstars.",
+  cover:"aharddaysnightalbumcover.jpg",
+  songs:[
+    {title:"A Hard Day's Night",file:"a-hard-day-s-night-remastered-2009-128-ytshorts.savetube.me.mp3"},
+    {title:"And I Love Her",file:"and-i-love-her-remastered-2009-128-ytshorts.savetube.me.mp3"},
+    {title:"If I Fell",file:"if-i-fell-remastered-2009-128-ytshorts.savetube.me.mp3"},
+    {title:"I Should Have Known Better",file:"the-beatles-i-should-have-known-better-128-ytshorts.savetube.me.mp3"},
+    {title:"You Can't Do That",file:"the-beatles-you-can-t-do-that-festival-hall-melbourne-australia-128-ytshorts.savetube.me.mp3"}
+  ]
+},
+{
+  title:"Let It Be",
+  description:"Let It Be is the twelfth and final studio album by The Beatles, released in 1970, shortly after the band had already begun to break apart. The album features a more stripped-down and emotional sound, reflecting the tensions and uncertainty within the group during its final recording sessions. It includes some of their most iconic and reflective songs, such as Let It Be, Get Back, and The Long and Winding Road. The production emphasizes a raw, live feel compared to their earlier experimental work, giving it a more intimate atmosphere. Despite the band’s internal conflicts, the album became a historic farewell that marked the end of The Beatles’ legendary career.",
+  cover:"letitibealbumcover.jpg",
+  songs:[
+    {title:"Let It Be",file:"let-it-be-remastered-2009-128-ytshorts.savetube.me.mp3"},
+    {title:"Get Back",file:"get-back-remastered-2009-128-ytshorts.savetube.me.mp3"},
+    {title:"Across The Universe",file:"letitbesongs/the-beatles-across-the-universe-lyrics-128-ytshorts.savetube.me.mp3"},
+    {title:"I Me Mine",file:"the-beatles-i-me-mine-official-music-video-128-ytshorts.savetube.me.mp3"},
+    {title:"The Long and Winding Road",file:"the-long-and-winding-road-remastered-2009-128-ytshorts.savetube.me.mp3"}
+  ]
+},
+{
+  title:"Abbey Road",
+  description:"Abbey Road is the eleventh studio album by The Beatles, released in 1969, and it is widely regarded as one of their greatest and most polished works. The album showcases a high level of musical craftsmanship, blending rock, pop, and experimental studio techniques into a seamless listening experience. It features some of the band’s most iconic songs, including Come Together, Something, and Here Comes the Sun, which highlight their individual songwriting strengths. The famous medley on the second side ties multiple short songs together into a continuous musical journey. Abbey Road became a landmark album in music history and is often seen as a symbolic farewell to the band’s unity and legacy. ",
+  cover:"abbeyroadalbumcover.jpg",
+  songs:[
+    {title:"Come Together",file:"come-together-remastered-2015-128-ytshorts.savetube.me.mp3"},
+    {title:"Something",file:"something-remastered-2015-128-ytshorts.savetube.me.mp3"},
+    {title:"Here Comes The Sun",file:"the-beatles-here-comes-the-sun-lyrics-128-ytshorts.savetube.me.mp3"},
+    {title:"Oh Darling",file:"the-beatles-oh-darling-official-video-128-ytshorts.savetube.me.mp3"},
+    {title:"Maxwell's Silver Hammer",file:"maxwell-s-silver-hammer-lyrics-the-beatles-128-ytshorts.savetube.me.mp3"}
+  ]
+}
+];
+
+const audio=document.getElementById("audio");
+const progress=document.getElementById("progress");
+const playBtn=document.getElementById("playBtn");
+
+let currentAlbum=0;
+let currentSong=0;
+let shuffle=false;
+
+function formatTime(t){
+  if(!t||isNaN(t)) return "0:00";
+  const m=Math.floor(t/60);
+  const s=Math.floor(t%60);
+  return m+":"+(s<10?"0":"")+s;
+}
+
+function renderAlbums(){
+  const el=document.getElementById("albums");
+  el.innerHTML="";
+  albums.forEach((a,i)=>{
+    const div=document.createElement("div");
+    div.className="album";
+    div.innerHTML=`<img src="${a.cover}"><div class="album-title">${a.title}</div>`;
+    div.onclick=()=>showAlbum(i);
+    el.appendChild(div);
+  });
+}
+
+function showAlbum(i){
+  currentAlbum=i;
+  document.getElementById("cover").src=albums[i].cover;
+  document.getElementById("title").textContent=albums[i].title;
+  document.getElementById("desc").textContent=albums[i].description;
+
+  const songs=document.getElementById("songs");
+  songs.innerHTML="";
+
+  albums[i].songs.forEach((s,si)=>{
+    const div=document.createElement("div");
+    div.className="song";
+    div.textContent=`${si+1}. ${s.title}`;
+    div.onclick=()=>loadSong(i,si);
+    songs.appendChild(div);
+  });
+}
+
+function loadSong(a,s){
+  currentAlbum=a;
+  currentSong=s;
+
+  const song=albums[a].songs[s];
+
+  audio.src=song.file;
+  audio.load();
+  audio.play().catch(()=>{});
+
+  document.getElementById("current").textContent=song.title;
+  document.getElementById("miniCover").src=albums[a].cover;
+
+  playBtn.classList.remove("fa-play");
+  playBtn.classList.add("fa-pause");
+
+  document.querySelectorAll(".song").forEach(e=>e.classList.remove("active"));
+  const list=document.querySelectorAll(".song");
+  if(list[s]) list[s].classList.add("active");
+}
+
+function playPause(){
+  if(audio.paused){
+    audio.play();
+    playBtn.classList.remove("fa-play");
+    playBtn.classList.add("fa-pause");
+  } else {
+    audio.pause();
+    playBtn.classList.remove("fa-pause");
+    playBtn.classList.add("fa-play");
+  }
+}
+
+function nextSong(){
+  const list=albums[currentAlbum].songs;
+  currentSong = shuffle ? Math.floor(Math.random()*list.length) : (currentSong+1)%list.length;
+  loadSong(currentAlbum,currentSong);
+}
+
+function toggleShuffle(){
+  shuffle=!shuffle;
+  document.querySelector(".fa-random").classList.toggle("active",shuffle);
+}
+
+function toggleLoop(){
+  audio.loop=!audio.loop;
+  document.querySelector(".fa-repeat").classList.toggle("active",audio.loop);
+}
+
+function setVolume(v){ audio.volume=v; }
+
+audio.addEventListener("loadedmetadata",()=>{
+  document.getElementById("duration").textContent=formatTime(audio.duration);
+});
+
+audio.addEventListener("timeupdate",()=>{
+  if(!audio.duration) return;
+  progress.value=(audio.currentTime/audio.duration)*100;
+  document.getElementById("currentTime").textContent=formatTime(audio.currentTime);
+  document.getElementById("duration").textContent=formatTime(audio.duration);
+});
+
+audio.addEventListener("ended",nextSong);
+
+progress.addEventListener("input",()=>{
+  audio.currentTime=(progress.value/100)*audio.duration;
+});
+
+renderAlbums();
+
+const saved=JSON.parse(localStorage.getItem("lastSong"));
+if(saved){
+  showAlbum(saved.a);
+  loadSong(saved.a,saved.s);
+}
+
+</script>
+
+</body>
+</html>

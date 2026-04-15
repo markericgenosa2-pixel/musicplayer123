@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Beatles Music Player</title>
+
+<style>
+body{
+  margin:0;
+  font-family:'Segoe UI',sans-serif;
+  background:url('beatleslogo.jpg') center/cover no-repeat;
+  height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:white;
+}
+
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.75);
+  z-index:-1;
+}
+
+.box{
+  text-align:center;
+  padding:30px;
+  background:rgba(0,0,0,0.5);
+  border-radius:12px;
+  backdrop-filter: blur(6px);
+}
+
+h1{
+  margin-bottom:10px;
+  font-size:28px;
+}
+
+p{
+  color:#ccc;
+  margin-bottom:20px;
+}
+
+button{
+  padding:12px 24px;
+  border:none;
+  border-radius:8px;
+  background:#1db954;
+  color:white;
+  font-size:16px;
+  cursor:pointer;
+}
+
+button:hover{
+  background:#17a74a;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+  <h1>🎵 The Beatles Music Player 🎵</h1>
+  <p>This is a personalized music player created by
+    Genosa, Mark Eric from BSCS2A. The music player contains five albums by<br>
+    his favorite rock band "The Beatles" with each album containing five of
+    his fav songs from the album. This is also an output for CSC186.
+  </p>
+
+  <!-- CHANGE THIS LINK to your main player file -->
+  <button onclick="window.location.href='player.html'">
+    Proceed
+  </button>
+</div>
+
+</body>
+</html>
